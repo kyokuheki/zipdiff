@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+Copyright (C) 2021 Kenzo Okuda, kyokuheki@gmail.com
+"""
+
 import zipfile
 import logging
 import collections
