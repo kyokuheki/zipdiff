@@ -71,14 +71,14 @@ def output(result):
     if result["method"] == "symmetric_difference":
         print('差分要素<共通要素。差分要素を表示対象とします。')
         if len(result["symmetric_difference_keys"]) == 0:
-            print("格納ファイルに差分なし")
+            print('\033[32m'+"差分なし"+'\033[0m')
         else:
             pprint.pprint(result["zip1"])
             pprint.pprint(result["zip2"])
     else:
         print('共通要素<差分要素。共通要素を表示対象とします。')
         if len(result["intersection_keys"]) == 0:
-            print("格納ファイルに一致なし")
+            print('\033[31m'+"一致なし"+'\033[0m')
         else:
             pprint.pprint(result["intersection"])
     return
