@@ -22,6 +22,17 @@ ZipCrc = collections.namedtuple('ZipCrc', ['crclist', 'crcdict', 'crcset', 'zf']
 def crclist_find(crclist: list, crc, size):
     return list(filter(lambda v: v[0:2] == (crc, size), crclist))
 
+def get_filename(zi: zipfile.ZipInfo, encoding="cp932"):
+    # general purpose bit flag: Bit 11: Language encoding flag (EFS)
+    if zi.flag_bits & 0x800:
+        # UTF-8 filename
+        return zi.filename
+    # zip default encoding: cp437
+    try:
+        return zi.filename.encode('cp437').decode()
+    except UnicodeDecodeError:
+        return zi.filename.encode('cp437').decode(encoding)
+
 def zipcrc(zf: zipfile.ZipFile):
     crclist = [(zfi.CRC, zfi.file_size, zfi) for zfi in zf.infolist() if not zfi.is_dir()]
     crcdict = {(zfi.CRC, zfi.file_size): zfi for zfi in zf.infolist() if not zfi.is_dir()}
@@ -31,7 +42,7 @@ def zipcrc(zf: zipfile.ZipFile):
         logger.warning('CRC,サイズ重複ファイルが存在する。{}: list={}, dict={}, set={}'.format(zf.filename, len(crclist), len(crcdict), len(crcset)))
     return ZipCrc(crclist, crcdict, crcset, zf)
 
-def diff(zc1: ZipCrc, zc2: ZipCrc):
+def diff(zc1: ZipCrc, zc2: ZipCrc, encoding="cp932"):
     result = {
         "zip1":{"filename":zc1.zf.filename},
         "zip2":{"filename":zc2.zf.filename},
@@ -42,16 +53,17 @@ def diff(zc1: ZipCrc, zc2: ZipCrc):
         r = []
         for i in symmetric_difference:
             for j in crclist_find(zc.crclist, *i):
-                r.append({"crc":j[0], "size":j[1], "filename":j[2].orig_filename.encode('cp437').decode('cp932')})
+                fn = get_filename(j[2], encoding)
+                r.append({"crc":j[0], "size":j[1], "filename":fn})
         return r
     def make_intersection(intersection, zc1: ZipCrc, zc2: ZipCrc):
         r = []
         for i in intersection:
             entry = {"crc":i[0], "size":i[1], "zip1":[], "zip2":[]}
             for j in crclist_find(zc1.crclist, *i):
-                entry["zip1"].append(j[2].orig_filename.encode('cp437').decode('cp932'))
+                entry["zip1"].append(get_filename(j[2], encoding))
             for j in crclist_find(zc2.crclist, *i):
-                entry["zip2"].append(j[2].orig_filename.encode('cp437').decode('cp932'))
+                entry["zip2"].append(get_filename(j[2], encoding))
             r.append(entry)
         return r
     result["intersection_keys"] = intersection
@@ -87,6 +99,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='zipdiff.py: Compare zip files by the CRC and file size of the files stored in them.')
     parser.add_argument('-v', '--verbose', action='count', default=0, help="Make the operation more talkative")
+    parser.add_argument('-e', '--encoding', default='cp932', help="Make the operation more talkative")
     parser.add_argument(
         'zipfile',
         type=zipfile.ZipFile)
@@ -108,7 +121,7 @@ def main():
         print("="*76)
         print(idx1, zc1.zf.filename)
         print(idx2, zc2.zf.filename)
-        r = diff(zc1, zc2)
+        r = diff(zc1, zc2, encoding)
         logger.debug("-"*76)
         logger.debug("{}".format(pprint.pformat(r)))
         
