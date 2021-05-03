@@ -99,7 +99,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='zipdiff.py: Compare zip files by the CRC and file size of the files stored in them.')
     parser.add_argument('-v', '--verbose', action='count', default=0, help="Make the operation more talkative")
-    parser.add_argument('-e', '--encoding', default='cp932', help="Make the operation more talkative")
+    parser.add_argument('-e', '--encoding', default='cp932', help="Filename encoding")
     parser.add_argument(
         'zipfile',
         type=zipfile.ZipFile)
@@ -121,7 +121,7 @@ def main():
         print("="*76)
         print(idx1, zc1.zf.filename)
         print(idx2, zc2.zf.filename)
-        r = diff(zc1, zc2, encoding)
+        r = diff(zc1, zc2, args.encoding)
         logger.debug("-"*76)
         logger.debug("{}".format(pprint.pformat(r)))
         
